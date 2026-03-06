@@ -9,15 +9,40 @@ let pieces = [];
 let pieceWidth = 0;
 let pieceHeight = 0;
 let firstSelection = null;
+let attemptCount = 0;
 
-// Получаем случайное фото с picsum.photos (без API ключа, без CORS проблем)
+// Набор URL из разных источников которые работают в России
+const IMAGE_SOURCES = [
+  () => `https://source.unsplash.com/800x600/?nature,${Date.now()}`,
+  () => `https://source.unsplash.com/800x600/?city,${Date.now()}`,
+  () => `https://source.unsplash.com/800x600/?landscape,${Date.now()}`,
+  () => `https://source.unsplash.com/800x600/?animals,${Date.now()}`,
+  () => `https://source.unsplash.com/800x600/?food,${Date.now()}`,
+  () => `https://loremflickr.com/800/600/nature?random=${Math.floor(Math.random()*1000)}`,
+  () => `https://loremflickr.com/800/600/city?random=${Math.floor(Math.random()*1000)}`,
+  () => `https://loremflickr.com/800/600/landscape?random=${Math.floor(Math.random()*1000)}`,
+];
+
+let sourceIndex = 0;
+
 function fetchRandomImageUrl() {
-  const randomId = Math.floor(Math.random() * 1000) + 1;
-  return `https://picsum.photos/id/${randomId}/800/600`;
+  const fn = IMAGE_SOURCES[sourceIndex % IMAGE_SOURCES.length];
+  sourceIndex++;
+  return fn();
 }
 
 function loadNewImage() {
   firstSelection = null;
+  attemptCount = 0;
+  tryLoadImage();
+}
+
+function tryLoadImage() {
+  if (attemptCount > IMAGE_SOURCES.length) {
+    alert('Не удалось загрузить картинку. Проверьте интернет-соединение.');
+    return;
+  }
+  attemptCount++;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const imageUrl = fetchRandomImageUrl();
@@ -30,8 +55,22 @@ function loadNewImage() {
   };
 
   img.onerror = () => {
-    // Если картинка не загрузилась, пробуем другую
-    loadNewImage();
+    // Пробуем следующий источник
+    tryLoadImage();
+  };
+
+  // Таймаут: если за 5 секунд не загрузилась - пробуем следующий
+  const timeout = setTimeout(() => {
+    if (!img.complete || img.naturalWidth === 0) {
+      img.src = '';
+      tryLoadImage();
+    }
+  }, 5000);
+
+  img.onload = () => {
+    clearTimeout(timeout);
+    setupCanvasAndPieces();
+    drawPieces();
   };
 
   img.src = imageUrl;
@@ -87,7 +126,6 @@ function drawPieces() {
     ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, pieceWidth, pieceHeight);
   });
 
-  // Рисуем сетку
   ctx.strokeStyle = 'rgba(255,255,255,0.3)';
   ctx.lineWidth = 1;
   for (let r = 0; r <= gridSize; r++) {
@@ -103,7 +141,6 @@ function drawPieces() {
     ctx.stroke();
   }
 
-  // Подсветка выбранного кусочка
   if (firstSelection) {
     ctx.strokeStyle = '#facc15';
     ctx.lineWidth = 3;
@@ -135,11 +172,11 @@ function checkSolved() {
   return pieces.every(p => p.currentRow === p.originalRow && p.currentCol === p.originalCol);
 }
 
-canvas.addEventListener('click', e => {
+function handleTap(clientX, clientY) {
   if (!img) return;
   const rect = canvas.getBoundingClientRect();
-  const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-  const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+  const x = (clientX - rect.left) * (canvas.width / rect.width);
+  const y = (clientY - rect.top) * (canvas.height / rect.height);
   const clickedPiece = findPieceAt(x, y);
   if (!clickedPiece) return;
   if (!firstSelection) {
@@ -156,33 +193,15 @@ canvas.addEventListener('click', e => {
     }
   }
   drawPieces();
-});
+}
 
-// Тач-поддержка для телефонов
+canvas.addEventListener('click', e => handleTap(e.clientX, e.clientY));
+
 canvas.addEventListener('touchend', e => {
   e.preventDefault();
-  if (!img) return;
   const touch = e.changedTouches[0];
-  const rect = canvas.getBoundingClientRect();
-  const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
-  const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
-  const clickedPiece = findPieceAt(x, y);
-  if (!clickedPiece) return;
-  if (!firstSelection) {
-    firstSelection = clickedPiece;
-  } else if (clickedPiece === firstSelection) {
-    firstSelection = null;
-  } else {
-    swapPieces(firstSelection, clickedPiece);
-    firstSelection = null;
-    drawPieces();
-    if (checkSolved()) {
-      setTimeout(() => alert('Готово! Картинка собрана.'), 100);
-      return;
-    }
-  }
-  drawPieces();
-});
+  handleTap(touch.clientX, touch.clientY);
+}, { passive: false });
 
 sizeSelect.addEventListener('change', () => {
   if (!img) return;
