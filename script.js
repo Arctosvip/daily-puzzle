@@ -9,43 +9,48 @@ let pieces = [];
 let pieceWidth = 0;
 let pieceHeight = 0;
 let firstSelection = null;
-let attemptCount = 0;
 
-// Набор URL из разных источников которые работают в России
-const IMAGE_SOURCES = [
-  () => `https://source.unsplash.com/800x600/?nature,${Date.now()}`,
-  () => `https://source.unsplash.com/800x600/?city,${Date.now()}`,
-  () => `https://source.unsplash.com/800x600/?landscape,${Date.now()}`,
-  () => `https://source.unsplash.com/800x600/?animals,${Date.now()}`,
-  () => `https://source.unsplash.com/800x600/?food,${Date.now()}`,
-  () => `https://loremflickr.com/800/600/nature?random=${Math.floor(Math.random()*1000)}`,
-  () => `https://loremflickr.com/800/600/city?random=${Math.floor(Math.random()*1000)}`,
-  () => `https://loremflickr.com/800/600/landscape?random=${Math.floor(Math.random()*1000)}`,
+// Прямые ссылки на красивые фото с Wikimedia Commons
+// Доступны в России без VPN
+const IMAGES = [
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/24701-nature-natural-beauty.jpg/1280px-24701-nature-natural-beauty.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Pleiades_large.jpg/1280px-Pleiades_large.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Camponotus_flavomarginatus_ant.jpg/1280px-Camponotus_flavomarginatus_ant.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/1280px-PNG_transparency_demonstration_1.png',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Biome_map_07.svg/1280px-Biome_map_07.svg.png',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Above_Gotham.jpg/1280px-Above_Gotham.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/GoldenGateBridge-001.jpg/1280px-GoldenGateBridge-001.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Empire_State_Building_%28aerial_view%29.jpg/800px-Empire_State_Building_%28aerial_view%29.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1280px-Cat03.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/YellowLabradorLooking_new.jpg/1280px-YellowLabradorLooking_new.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Cute_dog.jpg/1280px-Cute_dog.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Good_Food_Display_-_NCI_Visuals_Online.jpg/1280px-Good_Food_Display_-_NCI_Visuals_Online.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Olympic_flag.jpg/1280px-Olympic_flag.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/800px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Vd-Orig.png/1280px-Vd-Orig.png',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Marmot-edit1.jpg/1280px-Marmot-edit1.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Stonehenge.jpg/1280px-Stonehenge.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Sunset_over_the_sea.jpg/1280px-Sunset_over_the_sea.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Mus_musculus_-_Thomas_Brown.jpg/1280px-Mus_musculus_-_Thomas_Brown.jpg',
 ];
 
-let sourceIndex = 0;
+let usedIndices = [];
 
-function fetchRandomImageUrl() {
-  const fn = IMAGE_SOURCES[sourceIndex % IMAGE_SOURCES.length];
-  sourceIndex++;
-  return fn();
+function getRandomImageUrl() {
+  if (usedIndices.length >= IMAGES.length) usedIndices = [];
+  let idx;
+  do { idx = Math.floor(Math.random() * IMAGES.length); }
+  while (usedIndices.includes(idx));
+  usedIndices.push(idx);
+  return IMAGES[idx];
 }
 
 function loadNewImage() {
   firstSelection = null;
-  attemptCount = 0;
-  tryLoadImage();
-}
-
-function tryLoadImage() {
-  if (attemptCount > IMAGE_SOURCES.length) {
-    alert('Не удалось загрузить картинку. Проверьте интернет-соединение.');
-    return;
-  }
-  attemptCount++;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const imageUrl = fetchRandomImageUrl();
+  const imageUrl = getRandomImageUrl();
   img = new Image();
   img.crossOrigin = 'anonymous';
 
@@ -55,22 +60,8 @@ function tryLoadImage() {
   };
 
   img.onerror = () => {
-    // Пробуем следующий источник
-    tryLoadImage();
-  };
-
-  // Таймаут: если за 5 секунд не загрузилась - пробуем следующий
-  const timeout = setTimeout(() => {
-    if (!img.complete || img.naturalWidth === 0) {
-      img.src = '';
-      tryLoadImage();
-    }
-  }, 5000);
-
-  img.onload = () => {
-    clearTimeout(timeout);
-    setupCanvasAndPieces();
-    drawPieces();
+    // Пробуем другую
+    loadNewImage();
   };
 
   img.src = imageUrl;
@@ -78,7 +69,7 @@ function tryLoadImage() {
 
 function setupCanvasAndPieces() {
   const targetWidth = Math.min(window.innerWidth - 40, 600);
-  const ratio = img.height / img.width;
+  const ratio = img.naturalHeight / img.naturalWidth;
   const targetHeight = Math.round(targetWidth * ratio);
 
   canvas.width = targetWidth;
@@ -117,10 +108,10 @@ function shufflePieces() {
 function drawPieces() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   pieces.forEach(piece => {
-    const sx = (piece.originalCol * img.width) / gridSize;
-    const sy = (piece.originalRow * img.height) / gridSize;
-    const sWidth = img.width / gridSize;
-    const sHeight = img.height / gridSize;
+    const sx = (piece.originalCol * img.naturalWidth) / gridSize;
+    const sy = (piece.originalRow * img.naturalHeight) / gridSize;
+    const sWidth = img.naturalWidth / gridSize;
+    const sHeight = img.naturalHeight / gridSize;
     const dx = piece.currentCol * pieceWidth;
     const dy = piece.currentRow * pieceHeight;
     ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, pieceWidth, pieceHeight);
