@@ -11,38 +11,23 @@ let pieceWidth = 0;
 let pieceHeight = 0;
 let firstSelection = null;
 
-let usedUrls = [];
+let usedIds = [];
 
-const PIXABAY_KEY = '54916703-55349097c4a599ceaea15f9f8';
-const topics = ['nature', 'architecture', 'food', 'art', 'design', 'travel'];
-
-async function getRandomImageUrl() {
-  try {
-    const topic = topics[Math.floor(Math.random() * topics.length)];
-    const response = await fetch(
-      `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${topic}&image_type=photo&orientation=horizontal&per_page=200`
-    );
-    const data = await response.json();
-    
-    if (data.hits && data.hits.length > 0) {
-      const randomIndex = Math.floor(Math.random() * data.hits.length);
-      const url = data.hits[randomIndex].largeImageURL;
-      
-      if (!usedUrls.includes(url)) {
-        usedUrls.push(url);
-        if (usedUrls.length > 50) usedUrls.shift();
-        return url;
-      } else {
-        return getRandomImageUrl();
-      }
-    } else {
-      console.error('No images found');
-      return null;
-    }
-  } catch (error) {
-    console.error('Error fetching image:', error);
-    return null;
+function getRandomImageUrl() {
+  // Генерируем уникальный ID для изображения
+  let id = Math.floor(Math.random() * 1000) + 1;
+  
+  // Проверяем, не использовали ли мы этот ID
+  while (usedIds.includes(id)) {
+    id = Math.floor(Math.random() * 1000) + 1;
   }
+  
+  usedIds.push(id);
+  if (usedIds.length > 50) usedIds.shift();
+  
+  // Используем Lorem Picsum - стабильный источник случайных изображений
+  // Размер 1920x1080 для качественных фото
+  return `https://picsum.photos/id/${id}/1920/1080`;
 }
 
 function resizeCanvas() {
@@ -197,6 +182,7 @@ canvas.addEventListener('touchend', e => {
 
 sizeSelect.addEventListener('change', () => {
   if (!img) return;
+  gridSize = parseInt(sizeSelect.value, 10);
   setupCanvasAndPieces();
   drawPieces();
 });
@@ -211,16 +197,10 @@ window.addEventListener('resize', () => {
 resizeCanvas();
 loadNewImage();
 
-async function loadNewImage() {
+function loadNewImage() {
   loader.style.display = 'block';
   
-  const imageUrl = await getRandomImageUrl();
-  
-  if (!imageUrl) {
-    loader.style.display = 'none';
-    alert('Ошибка загрузки изображения');
-    return;
-  }
+  const imageUrl = getRandomImageUrl();
   
   img = new Image();
   img.crossOrigin = 'anonymous';
@@ -234,7 +214,7 @@ async function loadNewImage() {
   
   img.onerror = () => {
     loader.style.display = 'none';
-    alert('Ошибка загрузки изображения');
+    alert('Ошибка загрузки изображения. Попробуйте ещё раз.');
   };
   
   img.src = imageUrl;
