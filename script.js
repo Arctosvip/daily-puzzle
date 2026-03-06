@@ -11,14 +11,6 @@ let pieceWidth = 0;
 let pieceHeight = 0;
 let firstSelection = null;
 
-const FALLBACK_IMAGES = [
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/24701-nature-natural-beauty.jpg/1280px-24701-nature-natural-beauty.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1280px-Cat03.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Above_Gotham.jpg/1280px-Above_Gotham.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/GoldenGateBridge-001.jpg/1280px-GoldenGateBridge-001.jpg',
-];
-
 let usedUrls = [];
 
 async function getRandomImageUrl() {
@@ -37,11 +29,9 @@ async function getRandomImageUrl() {
       }
     }
   } catch (e) {
-    console.warn('Wikimedia API failed', e);
-  }
-  const idx = Math.floor(Math.random() * FALLBACK_IMAGES.length);
-  return FALLBACK_IMAGES[idx];
-}
+    console.error('Unsplash API failed', e);
+    alert('Не удалось загрузить изображение. Проверьте VPN.');
+    return null;}
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
