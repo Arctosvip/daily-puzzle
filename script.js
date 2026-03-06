@@ -11,45 +11,58 @@ let pieceWidth = 0;
 let pieceHeight = 0;
 let firstSelection = null;
 
-let usedIndices = [];
+let usedUrls = [];
 
-// Массив с качественными изображениями (работают без VPN)
-const imageUrls = [
-  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80',
-  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80',
-  'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=80',
-  'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1920&q=80',
-  'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=1920&q=80',
-  'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=1920&q=80',
-  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1920&q=80',
-  'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=1920&q=80',
-  'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=1920&q=80',
-  'https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?w=1920&q=80',
-  'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80',
-  'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=1920&q=80',
-  'https://images.unsplash.com/photo-1465146633011-14f8e0781093?w=1920&q=80',
-  'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=1920&q=80',
-  'https://images.unsplash.com/photo-1504893524553-b855bce32c67?w=1920&q=80',
-  'https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=1920&q=80',
-  'https://images.unsplash.com/photo-1483086431886-3590a88317fe?w=1920&q=80',
-  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80',
-  'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1920&q=80',
-  'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=1920&q=80'
+// Категории профессиональных фотографий из Wikimedia Commons
+const categories = [
+  'Featured_pictures_on_Wikimedia_Commons_(landscapes)',
+  'Quality_images_of_nature',
+  'Featured_pictures_of_mountains',
+  'Quality_images_of_seascapes',
+  'Featured_pictures_of_forests',
+  'Quality_images_of_sunsets',
+  'Featured_pictures_of_lakes',
+  'Quality_images_of_architecture'
 ];
 
-function getRandomImageUrl() {
-  let index = Math.floor(Math.random() * imageUrls.length);
-  
-  while (usedIndices.includes(index) && usedIndices.length < imageUrls.length) {
-    index = Math.floor(Math.random() * imageUrls.length);
+async function getRandomImageUrl() {
+  try {
+    const category = categories[Math.floor(Math.random() * categories.length)];
+    
+    const response = await fetch(
+      `https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=categorymembers&gcmtitle=Category:${category}&gcmlimit=50&prop=imageinfo&iiprop=url&iiurlwidth=1920&origin=*`
+    );
+    
+    const data = await response.json();
+    
+    if (data.query && data.query.pages) {
+      const pages = Object.values(data.query.pages);
+      const imagesWithUrls = pages.filter(page => 
+        page.imageinfo && 
+        page.imageinfo[0] && 
+        page.imageinfo[0].thumburl &&
+        !usedUrls.includes(page.imageinfo[0].thumburl)
+      );
+      
+      if (imagesWithUrls.length > 0) {
+        const randomPage = imagesWithUrls[Math.floor(Math.random() * imagesWithUrls.length)];
+        const imageUrl = randomPage.imageinfo[0].thumburl;
+        
+        usedUrls.push(imageUrl);
+        if (usedUrls.length > 50) usedUrls.shift();
+        
+        return imageUrl;
+      } else {
+        return getRandomImageUrl();
+      }
+    }
+    
+    console.error('No images found');
+    return null;
+  } catch (error) {
+    console.error('Error:', error);
+    return null;
   }
-  
-  usedIndices.push(index);
-  if (usedIndices.length >= imageUrls.length) {
-    usedIndices = [];
-  }
-  
-  return imageUrls[index];
 }
 
 function resizeCanvas() {
@@ -217,10 +230,16 @@ window.addEventListener('resize', () => {
 resizeCanvas();
 loadNewImage();
 
-function loadNewImage() {
+async function loadNewImage() {
   loader.style.display = 'block';
   
-  const imageUrl = getRandomImageUrl();
+  const imageUrl = await getRandomImageUrl();
+  
+  if (!imageUrl) {
+    loader.style.display = 'none';
+    alert('Ошибка загрузки изображения. Попробуйте ещё раз.');
+    return;
+  }
   
   img = new Image();
   img.crossOrigin = 'anonymous';
@@ -234,7 +253,8 @@ function loadNewImage() {
   
   img.onerror = () => {
     loader.style.display = 'none';
-    alert('Ошибка загрузки изображения. Попробуйте ещё раз.');
+    console.error('Image load error');
+    loadNewImage();
   };
   
   img.src = imageUrl;
