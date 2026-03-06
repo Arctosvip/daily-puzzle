@@ -12,6 +12,7 @@ let pieceHeight = 0;
 let firstSelection = null;
 
 let usedUrls = [];
+const topics = ['art-culture', 'architecture-interior', 'nature', 'food-drink'];
 
 async function getRandomImageUrl() {
   try {
