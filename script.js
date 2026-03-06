@@ -13,26 +13,34 @@ let firstSelection = null;
 
 let usedUrls = [];
 
+const PIXABAY_KEY = '54916703-55349097c4a599ceaea15f9f8';
+const topics = ['nature', 'architecture', 'food', 'art', 'design', 'travel'];
+
 async function getRandomImageUrl() {
   try {
-    // Lorem Picsum - простой сервис с красивыми изображениями, не требует API ключа
-    const randomId = Math.floor(Math.random() * 1000) + 1;
-    const url = `https://picsum.photos/id/${randomId}/1200/800`;
+    const topic = topics[Math.floor(Math.random() * topics.length)];
+    const response = await fetch(
+      `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${topic}&image_type=photo&orientation=horizontal&per_page=200`
+    );
+    const data = await response.json();
     
-    // Проверяем, не использовали ли мы уже это изображение
-    if (!usedUrls.includes(url)) {
-      usedUrls.push(url);
-      if (usedUrls.length > 50) usedUrls.shift();
-      return url;
-    } else {
-      // Если изображение уже было, пробуем получить другое
-      return getRandomImageUrl();
+    if (data.hits && data.hits.length > 0) {
+      const randomIndex = Math.floor(Math.random() * data.hits.length);
+      const url = data.hits[randomIndex].largeImageURL;
+      
+      if (!usedUrls.includes(url)) {
+        usedUrls.push(url);
+        if (usedUrls.length > 50) usedUrls.shift();
+        return url;
+      } else {
+        return getRandomImageUrl();
+      }
     }
+    return null;
   } catch (e) {
     console.error('Ошибка загрузки изображения', e);
     return null;
-
-function resizeCanvas() {
+  }function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 }
