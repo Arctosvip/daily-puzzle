@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ежедневный пазл</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <h1>Ежедневный пазл</h1>
+
+    <div class="controls">
+      <label>
+        Размер пазла:
+        <select id="sizeSelect">
+          <option value="3">3 x 3</option>
+          <option value="4" selected>4 x 4</option>
+          <option value="6">6 x 6</option>
+        </select>
+      </label>
+      <button id="newImageBtn">Новая картинка</button>
+    </div>
+
+    <div class="canvas-wrapper">
+      <canvas id="puzzleCanvas" width="600" height="400"></canvas>
+    </div>
+
+    <p class="hint">
+      Кликни по двум кусочкам, чтобы поменять их местами.
+    </p>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
