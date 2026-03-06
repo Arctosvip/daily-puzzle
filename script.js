@@ -23,8 +23,9 @@ let usedUrls = [];
 
 async function getRandomImageUrl() {
   try {
-    const response = await fetch('https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=random&grnnamespace=6&grnlimit=1&prop=imageinfo&iiprop=url&iiurlwidth=1280&origin=*');
-    const data = await response.json();
+    const categories = ['paintings', 'architecture', 'food', 'art', 'design', 'photography'];
+    const category = categories[Math.floor(Math.random() * categories.length)];
+    const response = await fetch(`https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrsearch=${category}&gsrnamespace=6&gsrlimit=50&prop=imageinfo&iiprop=url&iiurlwidth=1280&origin=*`);    const data = await response.json();
     const pages = data.query?.pages;
     if (pages) {
       const page = Object.values(pages)[0];
