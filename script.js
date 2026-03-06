@@ -31,7 +31,6 @@ async function getRandomImageUrl() {
   } catch (e) {
     console.error('Ошибка загрузки изображения', e);
     return null;
-    return null;}
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
