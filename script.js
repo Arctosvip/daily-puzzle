@@ -2,6 +2,7 @@ const canvas = document.getElementById('puzzleCanvas');
 const ctx = canvas.getContext('2d');
 const sizeSelect = document.getElementById('sizeSelect');
 const newImageBtn = document.getElementById('newImageBtn');
+const loader = document.getElementById('loader');
 
 let img = null;
 let gridSize = parseInt(sizeSelect.value, 10);
@@ -10,75 +11,84 @@ let pieceWidth = 0;
 let pieceHeight = 0;
 let firstSelection = null;
 
-// Прямые ссылки на красивые фото с Wikimedia Commons
-// Доступны в России без VPN
-const IMAGES = [
+const FALLBACK_IMAGES = [
   'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/24701-nature-natural-beauty.jpg/1280px-24701-nature-natural-beauty.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Pleiades_large.jpg/1280px-Pleiades_large.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Camponotus_flavomarginatus_ant.jpg/1280px-Camponotus_flavomarginatus_ant.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/1280px-PNG_transparency_demonstration_1.png',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Biome_map_07.svg/1280px-Biome_map_07.svg.png',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1280px-Cat03.jpg',
   'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/Above_Gotham.jpg/1280px-Above_Gotham.jpg',
   'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/GoldenGateBridge-001.jpg/1280px-GoldenGateBridge-001.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Empire_State_Building_%28aerial_view%29.jpg/800px-Empire_State_Building_%28aerial_view%29.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1280px-Cat03.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/YellowLabradorLooking_new.jpg/1280px-YellowLabradorLooking_new.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Cute_dog.jpg/1280px-Cute_dog.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Good_Food_Display_-_NCI_Visuals_Online.jpg/1280px-Good_Food_Display_-_NCI_Visuals_Online.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Olympic_flag.jpg/1280px-Olympic_flag.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/800px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Vd-Orig.png/1280px-Vd-Orig.png',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Marmot-edit1.jpg/1280px-Marmot-edit1.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Stonehenge.jpg/1280px-Stonehenge.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Sunset_over_the_sea.jpg/1280px-Sunset_over_the_sea.jpg',
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Mus_musculus_-_Thomas_Brown.jpg/1280px-Mus_musculus_-_Thomas_Brown.jpg',
 ];
 
-let usedIndices = [];
+let usedUrls = [];
 
-function getRandomImageUrl() {
-  if (usedIndices.length >= IMAGES.length) usedIndices = [];
-  let idx;
-  do { idx = Math.floor(Math.random() * IMAGES.length); }
-  while (usedIndices.includes(idx));
-  usedIndices.push(idx);
-  return IMAGES[idx];
+async function getRandomImageUrl() {
+  try {
+    const response = await fetch('https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=random&grnnamespace=6&grnlimit=1&prop=imageinfo&iiprop=url&iiurlwidth=1280&origin=*');
+    const data = await response.json();
+    const pages = data.query?.pages;
+    if (pages) {
+      const page = Object.values(pages)[0];
+      const url = page.imageinfo?.[0]?.thumburl || page.imageinfo?.[0]?.url;
+      if (url && !usedUrls.includes(url)) {
+        usedUrls.push(url);
+        if (usedUrls.length > 50) usedUrls.shift();
+        return url;
+      }
+    }
+  } catch (e) {
+    console.warn('Wikimedia API failed', e);
+  }
+  const idx = Math.floor(Math.random() * FALLBACK_IMAGES.length);
+  return FALLBACK_IMAGES[idx];
+}
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 }
 
 function loadNewImage() {
   firstSelection = null;
+  loader.classList.add('visible');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  const imageUrl = getRandomImageUrl();
-  img = new Image();
-  img.crossOrigin = 'anonymous';
-
-  img.onload = () => {
-    setupCanvasAndPieces();
-    drawPieces();
-  };
-
-  img.onerror = () => {
-    // Пробуем другую
-    loadNewImage();
-  };
-
-  img.src = imageUrl;
+  getRandomImageUrl().then(imageUrl => {
+    img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      loader.classList.remove('visible');
+      setupCanvasAndPieces();
+      drawPieces();
+    };
+    img.onerror = () => {
+      loader.classList.remove('visible');
+      loadNewImage();
+    };
+    img.src = imageUrl;
+  });
 }
 
 function setupCanvasAndPieces() {
-  const targetWidth = Math.min(window.innerWidth - 40, 600);
-  const ratio = img.naturalHeight / img.naturalWidth;
-  const targetHeight = Math.round(targetWidth * ratio);
-
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
-
+  resizeCanvas();
   gridSize = parseInt(sizeSelect.value, 10);
-  pieceWidth = canvas.width / gridSize;
-  pieceHeight = canvas.height / gridSize;
-
+  
+  const canvasAspect = canvas.width / canvas.height;
+  const imgAspect = img.naturalWidth / img.naturalHeight;
+  
+  let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
+  
+  if (canvasAspect > imgAspect) {
+    drawHeight = canvas.height;
+    drawWidth = drawHeight * imgAspect;
+    offsetX = (canvas.width - drawWidth) / 2;
+  } else {
+    drawWidth = canvas.width;
+    drawHeight = drawWidth / imgAspect;
+    offsetY = (canvas.height - drawHeight) / 2;
+  }
+  
+  pieceWidth = drawWidth / gridSize;
+  pieceHeight = drawHeight / gridSize;
+  
   pieces = [];
   for (let row = 0; row < gridSize; row++) {
     for (let col = 0; col < gridSize; col++) {
@@ -86,7 +96,9 @@ function setupCanvasAndPieces() {
         originalRow: row,
         originalCol: col,
         currentRow: row,
-        currentCol: col
+        currentCol: col,
+        offsetX,
+        offsetY
       });
     }
   }
@@ -106,47 +118,54 @@ function shufflePieces() {
 }
 
 function drawPieces() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
   pieces.forEach(piece => {
     const sx = (piece.originalCol * img.naturalWidth) / gridSize;
     const sy = (piece.originalRow * img.naturalHeight) / gridSize;
     const sWidth = img.naturalWidth / gridSize;
     const sHeight = img.naturalHeight / gridSize;
-    const dx = piece.currentCol * pieceWidth;
-    const dy = piece.currentRow * pieceHeight;
+    const dx = piece.offsetX + piece.currentCol * pieceWidth;
+    const dy = piece.offsetY + piece.currentRow * pieceHeight;
     ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, pieceWidth, pieceHeight);
   });
-
-  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
   ctx.lineWidth = 1;
+  const offsetX = pieces[0].offsetX;
+  const offsetY = pieces[0].offsetY;
   for (let r = 0; r <= gridSize; r++) {
     ctx.beginPath();
-    ctx.moveTo(0, r * pieceHeight);
-    ctx.lineTo(canvas.width, r * pieceHeight);
+    ctx.moveTo(offsetX, offsetY + r * pieceHeight);
+    ctx.lineTo(offsetX + gridSize * pieceWidth, offsetY + r * pieceHeight);
     ctx.stroke();
   }
   for (let c = 0; c <= gridSize; c++) {
     ctx.beginPath();
-    ctx.moveTo(c * pieceWidth, 0);
-    ctx.lineTo(c * pieceWidth, canvas.height);
+    ctx.moveTo(offsetX + c * pieceWidth, offsetY);
+    ctx.lineTo(offsetX + c * pieceWidth, offsetY + gridSize * pieceHeight);
     ctx.stroke();
   }
-
+  
   if (firstSelection) {
     ctx.strokeStyle = '#facc15';
     ctx.lineWidth = 3;
-    ctx.strokeRect(
-      firstSelection.currentCol * pieceWidth + 1.5,
-      firstSelection.currentRow * pieceHeight + 1.5,
-      pieceWidth - 3,
-      pieceHeight - 3
-    );
+    const fx = firstSelection.offsetX + firstSelection.currentCol * pieceWidth;
+    const fy = firstSelection.offsetY + firstSelection.currentRow * pieceHeight;
+    ctx.strokeRect(fx + 2, fy + 2, pieceWidth - 4, pieceHeight - 4);
   }
 }
 
 function findPieceAt(x, y) {
-  const col = Math.floor(x / pieceWidth);
-  const row = Math.floor(y / pieceHeight);
+  const offsetX = pieces[0].offsetX;
+  const offsetY = pieces[0].offsetY;
+  const relX = x - offsetX;
+  const relY = y - offsetY;
+  if (relX < 0 || relY < 0) return null;
+  const col = Math.floor(relX / pieceWidth);
+  const row = Math.floor(relY / pieceHeight);
+  if (col >= gridSize || row >= gridSize) return null;
   return pieces.find(p => p.currentRow === row && p.currentCol === col);
 }
 
@@ -165,10 +184,7 @@ function checkSolved() {
 
 function handleTap(clientX, clientY) {
   if (!img) return;
-  const rect = canvas.getBoundingClientRect();
-  const x = (clientX - rect.left) * (canvas.width / rect.width);
-  const y = (clientY - rect.top) * (canvas.height / rect.height);
-  const clickedPiece = findPieceAt(x, y);
+  const clickedPiece = findPieceAt(clientX, clientY);
   if (!clickedPiece) return;
   if (!firstSelection) {
     firstSelection = clickedPiece;
@@ -187,7 +203,6 @@ function handleTap(clientX, clientY) {
 }
 
 canvas.addEventListener('click', e => handleTap(e.clientX, e.clientY));
-
 canvas.addEventListener('touchend', e => {
   e.preventDefault();
   const touch = e.changedTouches[0];
@@ -201,5 +216,11 @@ sizeSelect.addEventListener('change', () => {
 });
 
 newImageBtn.addEventListener('click', () => loadNewImage());
+window.addEventListener('resize', () => {
+  if (!img) return;
+  setupCanvasAndPieces();
+  drawPieces();
+});
 
+resizeCanvas();
 loadNewImage();
