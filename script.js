@@ -23,13 +23,13 @@ let usedUrls = [];
 
 async function getRandomImageUrl() {
   try {
-    const categories = ['paintings', 'architecture', 'food', 'art', 'design', 'photography'];
-    const category = categories[Math.floor(Math.random() * categories.length)];
-    const response = await fetch(`https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrsearch=${category}&gsrnamespace=6&gsrlimit=50&prop=imageinfo&iiprop=url&iiurlwidth=1280&origin=*`);    const data = await response.json();
-    const pages = data.query?.pages;
-    if (pages) {
-      const page = Object.values(pages)[0];
-      const url = page.imageinfo?.[0]?.thumburl || page.imageinfo?.[0]?.url;
+    const topic = topics[Math.floor(Math.random() * topics.length)];
+        const response = await fetch(`https://api.unsplash.com/photos/random?topics=${topic}&count=1&orientation=landscape`, {
+          headers: { Authorization: 'Client-ID ohBGHkYK98TkNJl1mhiI5UDWtU7C0kcZTs2MxuhC1RN6euoImxALAdPF' }
+    });
+    const data = await response.json();
+    if (Array.isArray(data) && data.length > 0) {
+      const url = data[0].urls.regular;
       if (url && !usedUrls.includes(url)) {
         usedUrls.push(url);
         if (usedUrls.length > 50) usedUrls.shift();
