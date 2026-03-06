@@ -11,23 +11,45 @@ let pieceWidth = 0;
 let pieceHeight = 0;
 let firstSelection = null;
 
-let usedIds = [];
+let usedIndices = [];
+
+// Массив с качественными изображениями (работают без VPN)
+const imageUrls = [
+  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80',
+  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80',
+  'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=80',
+  'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1920&q=80',
+  'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=1920&q=80',
+  'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=1920&q=80',
+  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1920&q=80',
+  'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=1920&q=80',
+  'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=1920&q=80',
+  'https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?w=1920&q=80',
+  'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80',
+  'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=1920&q=80',
+  'https://images.unsplash.com/photo-1465146633011-14f8e0781093?w=1920&q=80',
+  'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=1920&q=80',
+  'https://images.unsplash.com/photo-1504893524553-b855bce32c67?w=1920&q=80',
+  'https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=1920&q=80',
+  'https://images.unsplash.com/photo-1483086431886-3590a88317fe?w=1920&q=80',
+  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=80',
+  'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1920&q=80',
+  'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=1920&q=80'
+];
 
 function getRandomImageUrl() {
-  // Генерируем уникальный ID для изображения
-  let id = Math.floor(Math.random() * 1000) + 1;
+  let index = Math.floor(Math.random() * imageUrls.length);
   
-  // Проверяем, не использовали ли мы этот ID
-  while (usedIds.includes(id)) {
-    id = Math.floor(Math.random() * 1000) + 1;
+  while (usedIndices.includes(index) && usedIndices.length < imageUrls.length) {
+    index = Math.floor(Math.random() * imageUrls.length);
   }
   
-  usedIds.push(id);
-  if (usedIds.length > 50) usedIds.shift();
+  usedIndices.push(index);
+  if (usedIndices.length >= imageUrls.length) {
+    usedIndices = [];
+  }
   
-  // Используем Lorem Picsum - стабильный источник случайных изображений
-  // Размер 1920x1080 для качественных фото
-  return `https://picsum.photos/id/${id}/1920/1080`;
+  return imageUrls[index];
 }
 
 function resizeCanvas() {
@@ -70,7 +92,6 @@ function setupCanvasAndPieces() {
     }
   }
   
-  // Перемешиваем
   for (let i = pieces.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     const temp = pieces[i];
@@ -78,7 +99,6 @@ function setupCanvasAndPieces() {
     pieces[j] = temp;
   }
   
-  // Обновляем текущие позиции
   pieces.forEach((piece, index) => {
     piece.currentRow = Math.floor(index / gridSize);
     piece.currentCol = index % gridSize;
