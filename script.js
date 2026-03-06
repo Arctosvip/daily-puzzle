@@ -17,8 +17,7 @@ async function getRandomImageUrl() {
   try {
     const topic = topics[Math.floor(Math.random() * topics.length)];
         const response = await fetch(`https://api.unsplash.com/photos/random?topics=${topic}&count=1&orientation=landscape`, {
-          headers: { Authorization: 'Client-ID ohBGHkYK98TkNJl1mhiI5UDWtU7C0kcZTs2MxuhC1RN6euoImxALAdPF' }
-    });
+      headers: { Authorization: 'Client-ID q50hZG99HuZIlPqjslhVnFYfKJOUxFdeQ52SZc3rEHo' }    });
     const data = await response.json();
     if (Array.isArray(data) && data.length > 0) {
       const url = data[0].urls.regular;
