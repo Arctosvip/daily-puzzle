@@ -17,7 +17,7 @@ const topics = ['art-culture', 'architecture-interior', 'nature', 'food-drink'];
 async function getRandomImageUrl() {
   try {
     const topic = topics[Math.floor(Math.random() * topics.length)];
-        const response = await fetch(`https://api.unsplash.com/photos/random?topics=${topic}&count=1&orientation=landscape`, {
+        const response = await fetch(`https://api.unsplash.com/photos/random?query=${topic}&count=1&orientation=landscape`, {
       headers: { Authorization: 'Client-ID q50hZG99HuZIlPqjslhVnFYfKJOUxFdeQ52SZc3rEHo' }    });
     const data = await response.json();
     if (Array.isArray(data) && data.length > 0) {
