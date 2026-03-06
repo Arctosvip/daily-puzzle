@@ -23,8 +23,7 @@ async function getRandomImageUrl() {
   try {
     // Используем Lorem Picsum - надежный сервис с качественными изображениями
     const randomId = Math.floor(Math.random() * 1000) + 1;
-    const imageUrl = `https://picsum.photos/id/${randomId}/1200/800`;
-    
+    const imageUrl = `https://picsum.photos/id/${randomId}/600/400`;    
     usedUrls.push(imageUrl);
     if (usedUrls.length > 50) usedUrls.shift();
     
