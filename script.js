@@ -12,25 +12,25 @@ let pieceHeight = 0;
 let firstSelection = null;
 
 let usedUrls = [];
-const topics = ['art-culture', 'architecture-interior', 'nature', 'food-drink'];
 
 async function getRandomImageUrl() {
   try {
-    const topic = topics[Math.floor(Math.random() * topics.length)];
-        const response = await fetch(`https://api.unsplash.com/photos/random?query=${topic}&count=1&orientation=landscape`, {
-      headers: { Authorization: 'Client-ID q50hZG99HuZIlPqjslhVnFYfKJOUxFdeQ52SZc3rEHo' }    });
-    const data = await response.json();
-    if (Array.isArray(data) && data.length > 0) {
-      const url = data[0].urls.regular;
-      if (url && !usedUrls.includes(url)) {
-        usedUrls.push(url);
-        if (usedUrls.length > 50) usedUrls.shift();
-        return url;
-      }
+    // Lorem Picsum - простой сервис с красивыми изображениями, не требует API ключа
+    const randomId = Math.floor(Math.random() * 1000) + 1;
+    const url = `https://picsum.photos/id/${randomId}/1200/800`;
+    
+    // Проверяем, не использовали ли мы уже это изображение
+    if (!usedUrls.includes(url)) {
+      usedUrls.push(url);
+      if (usedUrls.length > 50) usedUrls.shift();
+      return url;
+    } else {
+      // Если изображение уже было, пробуем получить другое
+      return getRandomImageUrl();
     }
   } catch (e) {
-    console.error('Unsplash API failed', e);
-    alert('Не удалось загрузить изображение. Проверьте VPN.');
+    console.error('Ошибка загрузки изображения', e);
+    return null;
     return null;}
 
 function resizeCanvas() {
